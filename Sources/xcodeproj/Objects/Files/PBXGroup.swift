@@ -108,7 +108,7 @@ public extension PBXGroup {
     func group(named name: String) -> PBXGroup? {
         return childrenReferences
             .objects()
-            .first(where: { $0.name == name })
+            .first(where: { $0.name == name || $0.path == name })
     }
 
     /// Returns the file in the group with the given name.
@@ -118,7 +118,7 @@ public extension PBXGroup {
     func file(named name: String) -> PBXFileReference? {
         return childrenReferences
             .objects()
-            .first(where: { $0.name == name })
+            .first(where: { $0.name == name || $0.path == name })
     }
 
     /// Creates a group with the given name and returns it.
@@ -129,14 +129,24 @@ public extension PBXGroup {
     /// - Returns: created groups.
     @discardableResult
     func addGroup(named groupName: String, options: GroupAddingOptions = []) throws -> [PBXGroup] {
-        let objects = try self.objects()
-        return groupName.components(separatedBy: "/").reduce(into: [PBXGroup](), { groups, name in
+        return try groupName.components(separatedBy: "/").reduce(into: [PBXGroup](), { groups, name in
             let group = groups.last ?? self
             let newGroup = PBXGroup(children: [], sourceTree: .group, name: name, path: options.contains(.withoutFolder) ? nil : name)
-            group.childrenReferences.append(newGroup.reference)
-            objects.add(object: newGroup)
+            try group.addGroup(newGroup)
             groups.append(newGroup)
         })
+    }
+
+
+    /// Adds group as a child
+    ///
+    /// - Parameter group: existing group
+    public func addGroup(_ group: PBXGroup) throws {
+        let objects = try self.objects()
+        objects.add(object: group)
+        if !self.childrenReferences.contains(group.reference) {
+            self.childrenReferences.append(group.reference)
+        }
     }
 
     /// Adds file at the give path to the project or returns existing file and its reference.
@@ -191,4 +201,17 @@ public extension PBXGroup {
         }
         return fileReference
     }
+
+
+    /// Add file reference to the project
+    ///
+    /// - Parameter fileReference: existing fileReference
+    public func addFileReference(_ fileReference: PBXFileReference) throws {
+        let projectObjects = try objects()
+        projectObjects.add(object: fileReference)
+        if !childrenReferences.contains(fileReference.reference) {
+            childrenReferences.append(fileReference.reference)
+        }
+    }
+
 }
