@@ -113,7 +113,7 @@ public extension PBXGroup {
     func group(named name: String) -> PBXGroup? {
         childrenReferences
             .objects()
-            .first(where: { $0.name == name })
+            .first(where: { $0.name == name || $0.path == name })
     }
 
     /// Returns the file in the group with the given name.
@@ -123,7 +123,7 @@ public extension PBXGroup {
     func file(named name: String) -> PBXFileReference? {
         childrenReferences
             .objects()
-            .first(where: { $0.name == name })
+            .first(where: { $0.name == name || $0.path == name })
     }
 
     /// Creates a group with the given name and returns it.
